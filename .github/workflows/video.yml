@@ -16,9 +16,14 @@ jobs:
       - name: Install ffmpeg
         run: sudo apt update && sudo apt install -y ffmpeg
 
+      - name: List files (debug)
+        run: ls -R
+
       - name: Create Video
         run: |
-          ffmpeg -loop 1 -i images/*.png -c:v libx264 -t 5 -pix_fmt yuv420p videos/output.mp4
+          mkdir -p videos
+          FILE=$(ls images | head -n 1)
+          ffmpeg -loop 1 -i images/$FILE -c:v libx264 -t 5 -pix_fmt yuv420p videos/output.mp4
 
       - name: Upload Video
         uses: actions/upload-artifact@v3
