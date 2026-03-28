@@ -1,35 +1,27 @@
-name: Auto Video Generator
-
+name: Video Creator Action
 on:
-  push:
-    paths:
-      - 'images/**'
+  repository_dispatch:
+    types: [create_video_signal]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Install ffmpeg
-        run: sudo apt update && sudo apt install -y ffmpeg
-
-      - name: Debug (see files)
-        run: |
-          echo "Images folder:"
-          ls -la images
-
-      - name: Create Video
-        run: |
-          mkdir -p videos
-          IMAGE=$(find images -type f | head -n 1)
-          echo "Using image: $IMAGE"
-          ffmpeg -loop 1 -i "$IMAGE" -c:v libx264 -t 5 -pix_fmt yuv420p videos/output.mp4
-
-      - name: Upload Video
-        uses: actions/upload-artifact@v4
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
         with:
-          name: output-video
-          path: videos/output.mp4
+          python-version: '3.9'
+      - run: pip install -r requirements.txt
+      - name: Create Video
+        env:
+          IMAGE_URL: ${{ github.event.client_payload.image_url }}
+          VOICE_TEXT: ${{ github.event.client_payload.voice_text }}
+          VIDEO_NAME: ${{ github.event.client_payload.video_name }}
+        run: python main.py
+      - name: Push to Repo
+        run: |
+          git config --global user.name "Bot"
+          git config --global user.email "bot@github.com"
+          git add videos/*.mp4
+          git commit -m "New video"
+          git push
